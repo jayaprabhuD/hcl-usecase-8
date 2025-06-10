@@ -26,7 +26,7 @@ resource "aws_subnet" "public_subnet_1" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "public-subnet-1"
+    Name = "public_subnet_1"
   }
 }
 
@@ -38,32 +38,124 @@ resource "aws_subnet" "public_subnet_2" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "public-subnet-2"
+    Name = "public_subnet_2"
   }
 }
 
 # 6. Public Route Table
-resource "aws_route_table" "bayer_public_rt" {
-  vpc_id = aws_vpc.bayer_vpc.id
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.bayer_igw.id
+    gateway_id = aws_internet_gateway.igw.id
   }
 
   tags = {
-    Name = "bayer-public-route-table"
+    Name = "public_route_table"
   }
 }
 
 # 7. Associate Subnet 1 with Route Table
-resource "aws_route_table_association" "bayer_assoc_subnet_1" {
-  subnet_id      = aws_subnet.bayer_public_subnet_1.id
-  route_table_id = aws_route_table.bayer_public_rt.id
+resource "aws_route_table_association" "assoc_subnet_1" {
+  subnet_id      = aws_subnet.public_subnet_1.id
+  route_table_id = aws_route_table.public_rt.id
 }
 
 # 8. Associate Subnet 2 with Route Table
-resource "aws_route_table_association" "bayer_assoc_subnet_2" {
-  subnet_id      = aws_subnet.bayer_public_subnet_2.id
-  route_table_id = aws_route_table.bayer_public_rt.id
+resource "aws_route_table_association" "assoc_subnet_2" {
+  subnet_id      = aws_subnet.public_subnet_2.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+# Creating Elastic IP for NAT Gateway
+resource "aws_eip" "nat_1" {
+  domain = "vpc"
+}
+
+# Creating NAT Gateway in public subnet 1
+resource "aws_nat_gateway" "nat_1" {
+  allocation_id = aws_eip.nat_1.id
+  subnet_id     = aws_subnet.public_subnet_1.id
+}
+
+## Creating Elastic IP for NAT Gateway 2
+#resource "aws_eip" "nat_2" {
+#  domain = "vpc"
+#}
+#
+## Creating NAT Gateway in public subnet 2
+#resource "aws_nat_gateway" "nat_2" {
+#  allocation_id = aws_eip.nat_2.id
+#  subnet_id     = aws_subnet.public_subnet_1.id
+#}
+
+#  Creating Private Subnet 1
+resource "aws_subnet" "private_subnet_1" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.private_subnet_1_cidr
+  availability_zone       = "ap-south-1a"
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name = "private_subnet_1"
+  }
+}
+
+# Creating Private Subnet 2
+resource "aws_subnet" "private_subnet_2" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.private_subnet_2_cidr
+  availability_zone       = "ap-south-1b"
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name = "private_subnet_2"
+  }
+}
+
+#  Private Route Table
+resource "aws_route_table" "private_rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_1.id
+  }
+
+  tags = {
+    Name = "public_route_table"
+  }
+}
+
+#  Associate Private Subnet 1 with Route Table
+resource "aws_route_table_association" "assoc_pri_subnet_1" {
+  subnet_id      = aws_subnet.private_subnet_1.id
+  route_table_id = aws_route_table.private_rt.id
+}
+
+#  Associate Subnet 2 with Route Table
+resource "aws_route_table_association" "assoc_pri_subnet_2" {
+  subnet_id      = aws_subnet.private_subnet_2.id
+  route_table_id = aws_route_table.private_rt.id
+}
+
+output "vpc_id" {
+  value = aws_vpc.main.id
+}
+
+output "public_subnet_1" {
+  value = aws_subnet.public_subnet_1.id
+}
+
+output "public_subnet_2" {
+  value = aws_subnet.public_subnet_2.id
+}
+
+output "private_subnet_1" {
+  value = aws_subnet.private_subnet_1.id
+}
+
+output "private_subnet_2" {
+  value = aws_subnet.private_subnet_2.id
 }
