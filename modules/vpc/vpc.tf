@@ -71,12 +71,18 @@ resource "aws_route_table_association" "assoc_subnet_2" {
 # Creating Elastic IP for NAT Gateway
 resource "aws_eip" "nat_1" {
   domain = "vpc"
+  tags = {
+    Name = "nat_eip"
+  }
 }
 
 # Creating NAT Gateway in public subnet 1
 resource "aws_nat_gateway" "nat_1" {
   allocation_id = aws_eip.nat_1.id
   subnet_id     = aws_subnet.public_subnet_1.id
+  tags = {
+  Name = "natgateway_for_pri_subs"
+  }
 }
 
 ## Creating Elastic IP for NAT Gateway 2
